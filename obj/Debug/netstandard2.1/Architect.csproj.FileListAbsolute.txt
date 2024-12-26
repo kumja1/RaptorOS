@@ -1,0 +1,5 @@
+/workspaces/RaptorOS/src/Architect/obj/Debug/netstandard2.1/Architect.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/RaptorOS/src/Architect/obj/Debug/netstandard2.1/Architect.AssemblyInfoInputs.cache
+/workspaces/RaptorOS/src/Architect/obj/Debug/netstandard2.1/Architect.AssemblyInfo.cs
+/workspaces/RaptorOS/src/Architect/obj/Debug/netstandard2.1/Architect.csproj.CoreCompileInputs.cache
+/workspaces/RaptorOS/src/Architect/obj/Debug/netstandard2.1/Architect.sourcelink.json
