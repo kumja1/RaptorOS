@@ -7,8 +7,7 @@ public static class SpanExtensions
 {
     public static IEnumerable<T> TakeWhile<T>(this Span<T> span, Func<T, bool> condition)
     {
-        var result = new List<T>();
-
+        List<T> result = [];
         for (int i = 0; i < span.Length; i++)
         {
             T item = span[i];

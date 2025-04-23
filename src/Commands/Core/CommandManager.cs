@@ -51,7 +51,7 @@ public class CommandManager
 
     private bool ValidateCommand(Command command, TokenizerResult result)
     {
-        if (result.Issues.Count > 0)
+        if (result.Issues.Length > 0)
         {
             Logger.LogError("Error while parsing command arguments:");
             foreach (string issue in result.Issues)

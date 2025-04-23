@@ -1,11 +1,11 @@
-using System.Collections.Generic;
+using RaptorOS.Utils;
 
 namespace RaptorOS.Commands.Core.Models;
 
 public struct OptionDefinition
 {
     public bool IsRequired;
-    public List<string> Aliases;
+    public EquatableArray<string> Aliases;
     public string Description;
     public ArgumentDefinition ValueDefinition;
 

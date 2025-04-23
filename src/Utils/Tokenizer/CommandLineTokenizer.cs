@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using RaptorOS.Utils.Extensions;
@@ -13,8 +12,7 @@ public static class CommandLineTokenizer
 
     public static TokenizerResult Tokenize(Span<string> parts)
     {
-        TokenizerResult result = new(new CommandToken());
-        result.Token.Name = parts[0];
+        TokenizerResult result = new(new CommandToken(name: parts[0]));
         Span<string> arguments = parts[1..];
 
         int i = 0;
@@ -39,10 +37,13 @@ public static class CommandLineTokenizer
         return result;
     }
 
-    public static bool TryTokenizeArgument(List<string> issues, string arg, out ArgumentToken token)
+    public static bool TryTokenizeArgument(
+        EquatableArray<string> issues,
+        string arg,
+        out ArgumentToken token
+    )
     {
         token = default;
-
         if (!TypeParser.TryParse(arg, out (object? Value, string TypeName) tuple))
         {
             issues.Add($"Failed to determine argument type for argument {arg}.");
@@ -55,7 +56,7 @@ public static class CommandLineTokenizer
     }
 
     public static bool TryTokenizeOption(
-        List<string> issues,
+        EquatableArray<string> issues,
         Span<string> arguments,
         out OptionToken token
     )

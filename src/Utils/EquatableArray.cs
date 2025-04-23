@@ -7,14 +7,18 @@ namespace RaptorOS.Utils;
 
 public struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>, IEnumerable<T>
 {
-    public EquatableArray(int size)
-        : this(new T[size]) { }
+    public EquatableArray(int capacity)
+        : this(new T[capacity])
+    {
+        _capacity = capacity;
+    }
 
     public EquatableArray()
-        : this([]) { }
+        : this(capacity: 4) { }
 
     private T[] _array = array;
-    private int _count = 0;
+    private int _count;
+    private int _capacity;
 
     public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) =>
         left.Equals(right);
@@ -44,12 +48,24 @@ public struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>, IEnu
 
     public void Add(T item)
     {
-        if (_count == _array.Length)
-            Array.Resize(ref _array, _count * 2);
+        if (_count == _capacity)
+        {
+            _capacity *= 2;
+            Array.Resize(ref _array, _capacity);
+        }
 
         _array[_count] = item;
         _count++;
     }
 
-    public readonly bool All(Func<T, bool> predicate) => _array.Take(_count).All(predicate);
+    public readonly bool All(Func<T, bool> predicate)
+    {
+        for (int i = 0; i < _count; i++)
+        {
+            if (!predicate(_array[i]))
+                return false;
+        }
+
+        return true;
+    }
 }
