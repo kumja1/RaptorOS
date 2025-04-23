@@ -1,11 +1,7 @@
 namespace RaptorOS.Utils.Tokenizer.Tokens;
 
-
-public class OptionToken : Token
-{
-    public string Name;
-
-    public bool IsShortHand;
-};
-
-
+public readonly record struct OptionToken(
+    string Name,
+    bool IsShortHand,
+    EquatableArray<ArgumentToken> Arguments
+);

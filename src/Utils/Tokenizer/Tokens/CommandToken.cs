@@ -1,12 +1,8 @@
-using System.Collections.Generic;
-
 namespace RaptorOS.Utils.Tokenizer.Tokens;
 
-
-public class CommandToken : Token {
-    public string Name;
-    public List<OptionToken> Options = [];
-    public List<CommandToken> SubCommands = [];
+public class CommandToken
+{
+    public string? Name;
+    public EquatableArray<OptionToken> Options = [];
+    public EquatableArray<ArgumentToken> Arguments = [];
 }
-
-

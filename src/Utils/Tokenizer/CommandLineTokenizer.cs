@@ -2,26 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using RaptorOS.Utils.Tokenizer.Tokens;
 using RaptorOS.Utils.Extensions;
+using RaptorOS.Utils.Tokenizer.Tokens;
 
 namespace RaptorOS.Utils.Tokenizer;
 
 public static class CommandLineTokenizer
 {
-    static class Issues
-    {
-        public const string InvalidCommandStart = "Command cannot start with an option. Ex: -a or --a";
-        public const string CouldNotDetermineType = "Failed to determine argument.";
-    }
+    private static readonly Regex OptionRegex = new(@"--?[a-zA-Z0-9_-]+", RegexOptions.RightToLeft);
 
-    private static readonly Regex OptionRegex = new(@"--?[a-zA-Z0-9_-]+", RegexOptions.Compiled);
-    public static TokenizerResult Tokenize(string input)
+    public static TokenizerResult Tokenize(Span<string> parts)
     {
         TokenizerResult result = new(new CommandToken());
-        Span<string> parts = input.TrimStart().Split(' ');
         result.Token.Name = parts[0];
-
         Span<string> arguments = parts[1..];
 
         int i = 0;
@@ -30,59 +23,67 @@ public static class CommandLineTokenizer
             string arg = arguments[i];
             if (IsOptionToken(arg))
             {
-                List<string> optionArgs = [.. arguments.TakeWhile(t => !IsOptionToken(t))];
-                TokenizeOption(result, optionArgs);
+                Span<string> optionArgs = [.. arguments.Skip(i).TakeWhile(t => !IsOptionToken(t))];
+                if (TryTokenizeOption(result.Issues, optionArgs, out OptionToken optionToken))
+                    result.Token.Options.Add(optionToken);
 
-                i += optionArgs.Count;
+                i += optionArgs.Length;
                 continue;
             }
 
-            TokenizeArgument(result, arg);
+            if (TryTokenizeArgument(result.Issues, arg, out ArgumentToken argToken))
+                result.Token.Arguments.Add(argToken);
+
             i++;
         }
-
+        return result;
     }
 
-    public static ArgumentToken TokenizeArgument(TokenizerResult tokenizerResult, string arg)
+    public static bool TryTokenizeArgument(List<string> issues, string arg, out ArgumentToken token)
     {
-        if (!TypeParser.TryParse(arg, out (object Value, string TypeName)? tuple))
+        token = default;
+
+        if (!TypeParser.TryParse(arg, out (object? Value, string TypeName) tuple))
         {
-            tokenizerResult.Issues.Add(Issues.CouldNotDetermineType + $" {arg}");
-            return null;
+            issues.Add($"Failed to determine argument type for argument {arg}.");
+            return false;
         }
 
-        var (value, typeName) = tuple.Value;
-        return new ArgumentToken
-        {
-            Value = value,
-            TypeName = typeName
-        };
+        var (value, typeName) = tuple;
+        token = new ArgumentToken(typeName, value);
+        return true;
     }
 
-    public static void TokenizeOption(TokenizerResult tokenizerResult, List<string> arguments)
+    public static bool TryTokenizeOption(
+        List<string> issues,
+        Span<string> arguments,
+        out OptionToken token
+    )
     {
-        if (arguments.Count == 0)
-        {
-            tokenizerResult.Issues.Add(Issues.InvalidCommandStart);
-            return;
-        }
+        token = default;
+
+        if (arguments.Length == 0)
+            return false;
 
         string option = arguments[0];
-        if (option.StartsWith("--"))
+        bool isLongOption = option.StartsWith("--");
+
+        EquatableArray<ArgumentToken> parsedArgs = [];
+        for (int i = 1; i < arguments.Length; i++)
         {
-            option = option[2..];
-        }
-        else
-        {
-            option = option[1..];
+            if (TryTokenizeArgument(issues, arguments[i], out ArgumentToken argToken))
+                parsedArgs.Add(argToken);
         }
 
-        tokenizerResult.Token.Options.Add(new OptionToken
+        token = new OptionToken
         {
-            Name = option,
-            Arguments = [.. arguments.Select(arg => TokenizeArgument(tokenizerResult, arg))]
-        });
+            Name = isLongOption ? option[2..] : option[1..],
+            IsShortHand = !isLongOption,
+            Arguments = parsedArgs,
+        };
+
+        return true;
     }
 
-    private static bool IsOptionToken(string str) => OptionRegex.IsMatch(str);
+    public static bool IsOptionToken(string str) => OptionRegex.IsMatch(str);
 }

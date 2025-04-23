@@ -1,23 +1,20 @@
-using System;
+using System.Collections.Generic;
+using RaptorOS.Commands.Core;
+using RaptorOS.Commands.Core.Models;
+using RaptorOS.Utils;
 
 namespace RaptorOS.Commands;
 
-public class Echo : Command
+public class EchoCommand : Command
 {
-public Echo()
-{
-    Name = "echo";
-    Description = "Echos input";
-
-}
-public override void Execute(string[] args)
-{
-    if (args.Length < 2)
+    public EchoCommand()
     {
-        Console.WriteLine("Usage: echo <message>");
-        return;
-
+        Description = "Echos input";
+        Arguments.Add(new ArgumentDefinition { IsRequired = true, TypeName = "string" });
     }
-    Console.WriteLine(string.Join(" ", args[1..]));
-}
+
+    public override void Execute(
+        List<object> arguments,
+        Dictionary<string, IEnumerable<object?>> options
+    ) => Logger.Log(string.Join(" ", arguments));
 }

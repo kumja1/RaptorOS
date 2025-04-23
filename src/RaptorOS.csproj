@@ -6,7 +6,7 @@
         <SupportsX86Intrinsics>false</SupportsX86Intrinsics>
         <SelfContained>True</SelfContained>
         <LangVersion>latest</LangVersion>
-        <Nullable>true</Nullable>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <PropertyGroup>
