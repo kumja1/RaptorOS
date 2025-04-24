@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using System.Text.RegularExpressions;
 using RaptorOS.Utils.Extensions;
 using RaptorOS.Utils.Tokenizer.Tokens;
 
@@ -8,8 +6,6 @@ namespace RaptorOS.Utils.Tokenizer;
 
 public static class CommandLineTokenizer
 {
-    private static readonly Regex OptionRegex = new(@"--?[a-zA-Z0-9_-]+", RegexOptions.RightToLeft);
-
     public static TokenizerResult Tokenize(Span<string> parts)
     {
         TokenizerResult result = new(new CommandToken(name: parts[0]));
@@ -86,5 +82,27 @@ public static class CommandLineTokenizer
         return true;
     }
 
-    public static bool IsOptionToken(string str) => OptionRegex.IsMatch(str);
+    public static bool IsOptionToken(string str)
+    {
+        if (string.IsNullOrWhiteSpace(str))
+            return false;
+
+        if (str.StartsWith("--"))
+            str = str[2..];
+        else if (str.StartsWith("-"))
+            str = str[1..];
+        else
+            return false;
+
+        if (str.Length == 0)
+            return false;
+
+        foreach (char c in str)
+        {
+            if (!char.IsLetterOrDigit(c) && c != '-' && c != '_')
+                return false;
+        }
+
+        return true;
+    }
 }
