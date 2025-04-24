@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace RaptorOS.Utils;
 
@@ -14,18 +13,9 @@ public static class TypeParser
         ["bool"] = s => bool.TryParse(s, out var v) ? (true, v) : (false, null),
         ["int"] = s => int.TryParse(s, out var v) ? (true, v) : (false, null),
         ["long"] = s => long.TryParse(s, out var v) ? (true, v) : (false, null),
-        ["float"] = s =>
-            float.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var v)
-                ? (true, v)
-                : (false, null),
-        ["double"] = s =>
-            double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var v)
-                ? (true, v)
-                : (false, null),
-        ["decimal"] = s =>
-            decimal.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var v)
-                ? (true, v)
-                : (false, null),
+        ["float"] = s => float.TryParse(s, out var v) ? (true, v) : (false, null),
+        ["double"] = s => double.TryParse(s, out var v) ? (true, v) : (false, null),
+        ["decimal"] = s => decimal.TryParse(s, out var v) ? (true, v) : (false, null),
         ["DateTime"] = s => DateTime.TryParse(s, out var v) ? (true, v) : (false, null),
         ["Guid"] = s => Guid.TryParse(s, out var v) ? (true, v) : (false, null),
         ["string"] = s => (true, s),

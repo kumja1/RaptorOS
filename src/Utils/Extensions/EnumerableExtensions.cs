@@ -96,8 +96,12 @@ public static class EnumerableExtensions
                 null,
                 selector
             );
-        if (source is List<TSource> list)
-            return new WhereSelectListIterator<TSource, TResult>(list, null, selector);
+        if (source is List<TSource>)
+            return new WhereSelectListIterator<TSource, TResult>(
+                (List<TSource>)source,
+                null,
+                selector
+            );
         return new WhereSelectEnumerableIterator<TSource, TResult>(source, null, selector);
     }
 
@@ -2084,7 +2088,7 @@ public static class EnumerableExtensions
             throw new ArgumentNullException("source");
         if (predicate == null)
             throw new ArgumentNullException("predicate");
-        TSource result = default;
+        TSource result = default(TSource);
         long count = 0;
         foreach (TSource element in source)
         {
@@ -2156,7 +2160,7 @@ public static class EnumerableExtensions
                 }
             }
         }
-        return default;
+        return default(TSource);
     }
 
     public static IEnumerable<int> Range(int start, int count)
@@ -2235,9 +2239,11 @@ public static class EnumerableExtensions
     {
         if (source == null)
             throw new ArgumentNullException("source");
-        if (source is ICollection<TSource> collectionoft)
+        ICollection<TSource> collectionoft = source as ICollection<TSource>;
+        if (collectionoft != null)
             return collectionoft.Count;
-        if (source is ICollection collection)
+        ICollection collection = source as ICollection;
+        if (collection != null)
             return collection.Count;
         int count = 0;
         using (IEnumerator<TSource> e = source.GetEnumerator())
@@ -2294,9 +2300,9 @@ public static class EnumerableExtensions
     )
     {
         if (source == null)
-            throw new ArgumentNullException(nameof(source));
+            throw new ArgumentNullException("source");
         if (predicate == null)
-            throw new ArgumentNullException(nameof(predicate));
+            throw new ArgumentNullException("predicate");
         long count = 0;
         foreach (TSource element in source)
         {
@@ -2311,7 +2317,8 @@ public static class EnumerableExtensions
 
     public static bool Contains<TSource>(this IEnumerable<TSource> source, TSource value)
     {
-        if (source is ICollection<TSource> collection)
+        ICollection<TSource> collection = source as ICollection<TSource>;
+        if (collection != null)
             return collection.Contains(value);
         return Contains<TSource>(source, value, null);
     }
@@ -2325,7 +2332,7 @@ public static class EnumerableExtensions
         if (comparer == null)
             comparer = EqualityComparer<TSource>.Default;
         if (source == null)
-            throw new ArgumentNullException(nameof(source));
+            throw new ArgumentNullException("source");
         foreach (TSource element in source)
             if (comparer.Equals(element, value))
                 return true;
@@ -2359,9 +2366,9 @@ public static class EnumerableExtensions
     )
     {
         if (source == null)
-            throw new ArgumentNullException(nameof(source));
+            throw new ArgumentNullException("source");
         if (func == null)
-            throw new ArgumentNullException(nameof(func));
+            throw new ArgumentNullException("func");
         TAccumulate result = seed;
         foreach (TSource element in source)
             result = func(result, element);
@@ -3939,11 +3946,13 @@ internal class GroupedEnumerable<TSource, TKey, TElement, TResult> : IEnumerable
             throw new ArgumentNullException("keySelector");
         if (elementSelector == null)
             throw new ArgumentNullException("elementSelector");
+        if (resultSelector == null)
+            throw new ArgumentNullException("resultSelector");
         this.source = source;
         this.keySelector = keySelector;
         this.elementSelector = elementSelector;
         this.comparer = comparer;
-        this.resultSelector = resultSelector ?? throw new ArgumentNullException("resultSelector");
+        this.resultSelector = resultSelector;
     }
 
     public IEnumerator<TResult> GetEnumerator()
