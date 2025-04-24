@@ -889,12 +889,14 @@ public static class EnumerableExtensions
         Func<TSource, bool> predicate
     )
     {
+        List<TSource> list = [];
         foreach (TSource element in source)
         {
             if (!predicate(element))
                 break;
-            yield return element;
+            list.Add(element);
         }
+        return list;
     }
 
     public static IEnumerable<TSource> TakeWhile<TSource>(
@@ -915,6 +917,7 @@ public static class EnumerableExtensions
     )
     {
         int index = -1;
+        List<TSource> result = [];
         foreach (TSource element in source)
         {
             checked
@@ -923,8 +926,9 @@ public static class EnumerableExtensions
             }
             if (!predicate(element, index))
                 break;
-            yield return element;
+            result.Add(element);
         }
+        return result;
     }
 
     public static IEnumerable<TSource> Skip<TSource>(this IEnumerable<TSource> source, int count)

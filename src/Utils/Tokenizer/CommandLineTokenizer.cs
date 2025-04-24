@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RaptorOS.Utils.Extensions;
 using RaptorOS.Utils.Tokenizer.Tokens;
 
@@ -15,8 +16,7 @@ public static class CommandLineTokenizer
         while (i < arguments.Length)
         {
             string arg = arguments[i];
-            if (IsOptionToken(arg))
-            {
+            if (IsOptionToken(arg)){
                 Span<string> optionArgs = [.. arguments.Skip(i).TakeWhile(t => !IsOptionToken(t))];
                 if (TryTokenizeOption(result.Issues, optionArgs, out OptionToken optionToken))
                     result.Token.Options.Add(optionToken);

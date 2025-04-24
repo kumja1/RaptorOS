@@ -10,7 +10,6 @@ public class Kernel : Sys.Kernel
 {
     protected override void BeforeRun()
     {
-        Console.Clear();
         Logger.Log("=========================");
 
         Logger.Log("RaptorOS Booted. Welcome");
@@ -18,7 +17,7 @@ public class Kernel : Sys.Kernel
         Logger.Log("=========================");
 
         RegisterCommands();
-        Logger.Log("Commands Registered");
+        Logger.LogInfo("Commands Registered");
     }
 
     private void RegisterCommands()

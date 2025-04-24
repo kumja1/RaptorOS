@@ -16,7 +16,6 @@ public static class TypeParser
         ["float"] = s => float.TryParse(s, out var v) ? (true, v) : (false, null),
         ["double"] = s => double.TryParse(s, out var v) ? (true, v) : (false, null),
         ["decimal"] = s => decimal.TryParse(s, out var v) ? (true, v) : (false, null),
-        ["DateTime"] = s => DateTime.TryParse(s, out var v) ? (true, v) : (false, null),
         ["Guid"] = s => Guid.TryParse(s, out var v) ? (true, v) : (false, null),
         ["string"] = s => (true, s),
     };

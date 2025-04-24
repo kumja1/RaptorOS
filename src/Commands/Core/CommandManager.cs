@@ -27,13 +27,15 @@ public class CommandManager
         if (string.IsNullOrEmpty(input))
             return;
 
-        Span<string> parts = input.TrimStart().TrimEnd().Split(' ');
+        Logger.LogInfo($"Executing command: {input}");
+        Span<string> parts = input.Split(' ');
+        Logger.LogInfo($"Command parts: {string.Join(",", parts.ToArray())}");
         if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
             return;
 
         string cmdName = parts[0];
         if (!_commands.TryGetValue(cmdName, out Command? command))
-            Logger.LogError($"Command {cmdName} could not found");
+            Logger.LogError($"Command {cmdName} does not exist");
 
         TokenizerResult result = CommandLineTokenizer.Tokenize(parts);
         if (!ValidateCommand(command!, result))
