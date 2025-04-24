@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using RaptorOS.Commands;
 using RaptorOS.Commands.Core;
 using RaptorOS.Utils;
@@ -25,8 +25,13 @@ public class Kernel : Sys.Kernel
         CommandManager.Instance.RegisterCommand(new EchoCommand());
     }
 
-    protected override void Run()
+ protected override void Run()
+{
+    Console.Write("raptor> ");
+    while (true)
     {
         CommandManager.Instance.Tick();
+        Console.Write("raptor> ");
     }
+}
 }
