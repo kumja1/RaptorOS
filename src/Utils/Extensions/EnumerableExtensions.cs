@@ -88,8 +88,8 @@ public static class EnumerableExtensions
             throw new ArgumentNullException("source");
         if (selector == null)
             throw new ArgumentNullException("selector");
-        if (source is Iterator<TSource>)
-            return ((Iterator<TSource>)source).Select(selector);
+        if (source is Iterator<TSource> sources)
+            return sources.Select(selector);
         if (source is TSource[])
             return new WhereSelectArrayIterator<TSource, TResult>(
                 (TSource[])source,
@@ -861,15 +861,17 @@ public static class EnumerableExtensions
 
     static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, int count)
     {
+        List<TSource> results = new List<TSource>(count);
         if (count > 0)
         {
             foreach (TSource element in source)
             {
-                yield return element;
+                results.Add(element);
                 if (--count == 0)
                     break;
             }
         }
+        return results;
     }
 
     public static IEnumerable<TSource> TakeWhile<TSource>(
@@ -940,6 +942,7 @@ public static class EnumerableExtensions
 
     static IEnumerable<TSource> SkipIterator<TSource>(IEnumerable<TSource> source, int count)
     {
+        List<TSource> results = [];
         using (IEnumerator<TSource> e = source.GetEnumerator())
         {
             while (count > 0 && e.MoveNext())
@@ -947,9 +950,10 @@ public static class EnumerableExtensions
             if (count <= 0)
             {
                 while (e.MoveNext())
-                    yield return e.Current;
+                    results.Add(e.Current);
             }
         }
+        return results;
     }
 
     public static IEnumerable<TSource> SkipWhile<TSource>(
@@ -1556,12 +1560,15 @@ public static class EnumerableExtensions
         IEqualityComparer<TSource> comparer
     )
     {
+        List<TSource> list = [];
         Set<TSource> set = new Set<TSource>(comparer);
         foreach (TSource element in second)
             set.Add(element);
         foreach (TSource element in first)
             if (set.Add(element))
-                yield return element;
+                list.Add(element);
+        
+        return list;
     }
 
     public static IEnumerable<TSource> Reverse<TSource>(this IEnumerable<TSource> source)

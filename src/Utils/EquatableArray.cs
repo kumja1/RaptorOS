@@ -1,23 +1,24 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using RaptorOS.Utils.Extensions;
+using RaptorOS.Utils.Tokenizer.Tokens;
 
 namespace RaptorOS.Utils;
 
 public struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>, IEnumerable<T>
 {
     public EquatableArray(int capacity)
-        : this(new T[capacity])
+        : this(new T[capacity == 0 ? 1 : capacity])
     {
-        _capacity = capacity;
     }
 
     public EquatableArray()
-        : this(capacity: 4) { }
+        : this(capacity: 4)
+    {
+    }
 
     private T[] _array = array;
-    private int _count;
-    private int _capacity;
 
     public static bool operator ==(EquatableArray<T> left, EquatableArray<T> right) =>
         left.Equals(right);
@@ -31,40 +32,84 @@ public struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>, IEnu
 
     public readonly ref T this[int index] => ref _array[index];
 
-    public readonly int Length => _array.Length;
+    public int Capacity => _array.Length;
+
+    public int Count { get; private set; }
 
     public readonly bool Equals(EquatableArray<T> other) =>
-        _array.Length == other._array.Length && _array.AsSpan().SequenceEqual(other._array);
+        Count == other.Count && _array.AsSpan().SequenceEqual(other._array);
 
-    public override readonly bool Equals(object? obj) =>
+    public readonly override bool Equals(object? obj) =>
         obj is EquatableArray<T> other && Equals(other);
 
-    public override readonly int GetHashCode() => _array.GetHashCode();
+    public readonly override int GetHashCode()
+    {
+        HashCode hashCode = new();
+        for (int i = 0; i < Count; i++)
+            hashCode.Add(_array[i]);
 
-    public readonly IEnumerator<T> GetEnumerator() => ((IEnumerable<T>)_array).GetEnumerator();
+        return hashCode.ToHashCode();
+    }
+
+    public readonly IEnumerator<T> GetEnumerator() => new EquatableArrayEnumerator<T>(this);
 
     readonly IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public void Add(T item)
     {
-        if (_count == _capacity)
-        {
-            _capacity *= 2;
-            Array.Resize(ref _array, _capacity);
-        }
-
-        _array[_count] = item;
-        _count++;
+        if (Count == Capacity)
+            Array.Resize(ref _array, Capacity * 2 );
+        
+        _array[Count] = item;
+        Count++;
     }
 
-    public readonly bool All(Func<T, bool> predicate)
-    {
-        for (int i = 0; i < _count; i++)
-        {
-            if (!predicate(_array[i]))
-                return false;
-        }
 
+    public void AddRange(IEnumerable<T> items)
+    {
+        foreach (T item in items)
+            Add(item);
+    }
+
+    public int IndexOf(T item)
+    {
+        Logger.LogInfo("IndexOf start");
+    
+        for (int i = 0; i < Count; i++)
+        {
+            Logger.LogInfo($"rComparing index {i}");
+
+            if (item is not IEquatable<T> equatable  || !equatable.Equals(_array[i])) continue;
+            Logger.LogInfo($"Found match at index {i}");
+            return i;
+        }
+    
+        Logger.LogInfo("Item not found");
+        return -1;
+    }
+}
+
+internal class EquatableArrayEnumerator<T>(EquatableArray<T> array) : IEnumerator<T>
+{
+    private int _index;
+
+    public bool MoveNext()
+    {
+        if (_index >= array.Count)
+            return false;
+
+        Current = array[_index];
+        _index++;
         return true;
+    }
+
+    public void Reset() => _index = 0;
+
+    public T Current { get; private set; }
+
+    object? IEnumerator.Current => Current!;
+
+    public void Dispose()
+    {
     }
 }

@@ -25,13 +25,17 @@ public class Kernel : Sys.Kernel
         CommandManager.Instance.RegisterCommand(new EchoCommand());
     }
 
- protected override void Run()
-{
-    Console.Write("raptor> ");
-    while (true)
+    protected override void Run()
     {
-        CommandManager.Instance.Tick();
         Console.Write("raptor> ");
+        CommandManager.Instance.Tick();
     }
-}
+
+    protected override void AfterRun()
+    {
+        Logger.Log("=========================");
+        Logger.Log("RaptorOS Shutting Down");
+        Logger.Log("=========================");
+        CommandManager.Instance.RemoveCommand("echo");
+    }
 }

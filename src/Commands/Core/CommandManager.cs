@@ -13,7 +13,7 @@ public class CommandManager
     private static CommandManager? _instance;
     public static CommandManager Instance => _instance ??= new CommandManager();
 
-    public Dictionary<string, Command> _commands = [];
+    private Dictionary<string, Command> _commands = [];
 
     public void RegisterCommand(Command command) => _commands.Add(command.Name, command);
 
@@ -28,113 +28,38 @@ public class CommandManager
             return;
 
         Logger.LogInfo($"Executing command: {input}");
-        Span<string> parts = input.Split(' ');
-        Logger.LogInfo($"Command parts: {string.Join(",", parts.ToArray())}");
-        if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
-            return;
-
-        string cmdName = parts[0];
-        if (!_commands.TryGetValue(cmdName, out Command? command))
-            Logger.LogError($"Command {cmdName} does not exist");
-
-        TokenizerResult result = CommandLineTokenizer.Tokenize(parts);
-        if (!ValidateCommand(command!, result))
-            return;
-
-        Dictionary<string, IEnumerable<object?>> options = result.Token.Options.ToDictionary(
-            x => x.Name,
-            x => x.Arguments.Select(y => y.Value)
-        );
-
-        List<object> arguments = [.. result.Token.Arguments.Select(x => x.Value)];
-        command!.ExecuteCore(arguments, options);
-    }
-
-    private bool ValidateCommand(Command command, TokenizerResult result)
-    {
-        if (result.Issues.Length > 0)
+        try
         {
-            Logger.LogError("Error while parsing command arguments:");
-            foreach (string issue in result.Issues)
-                Logger.LogError(issue);
+            string[] parts = input.TrimStart().TrimEnd()
+                .Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            Logger.LogInfo($"Processing command: {parts[0]}");
+            Logger.LogInfo($"Command arguments: {string.Join(",", parts)}");
 
-            return false;
-        }
-
-        if (command.Arguments.Count > 0 && result.Token.Arguments.Length == 0)
-        {
-            Logger.LogError($"Command {command.Name} requires arguments");
-            return false;
-        }
-        else if (command.Arguments.Count == 0 && result.Token.Arguments.Length > 0)
-        {
-            Logger.LogError($"Command {command.Name} does not accept arguments");
-            return false;
-        }
-
-        int requiredArgLength = command.Arguments.Count(x => x.IsRequired);
-        if (result.Token.Arguments.Length < requiredArgLength)
-        {
-            Logger.LogError($"Command {command.Name} requires {requiredArgLength} arguments");
-            return false;
-        }
-
-        for (int i = 0; i < result.Token.Arguments.Length; i++)
-        {
-            bool hasDefinition = command.Arguments.TryGetValue(i, out ArgumentDefinition def);
-            if (!hasDefinition)
+            string cmdName = parts[0];
+            if (!_commands.TryGetValue(cmdName, out Command? command))
             {
-                Logger.LogError($"Argument {i} is not a valid argument for command {command.Name}");
-                return false;
+                Logger.LogError($"Command {cmdName} does not exist");
+                return;
             }
 
-            ArgumentToken token = result.Token.Arguments[i];
-            if (def.TypeName != token.TypeName)
-            {
-                Logger.LogError($"Argument {i} is not of type {def.TypeName}");
-                return false;
-            }
-        }
+            Logger.LogInfo($"Found command {cmdName}");
+            TokenizerResult result = CommandLineTokenizer.Tokenize(parts);
+            Logger.LogInfo("Received tokenizer result");
+            if (!CommandLineParser.ParseCommand(command,result))
+                return;
 
-        int requiredOptionLength = command.Options.Count(x => x.Value.IsRequired);
-        if (result.Token.Options.Length < requiredOptionLength)
+            Logger.LogInfo($"Command {cmdName} is valid");
+            var options = result.Token.Options.ToDictionary(
+                x => x.Name,
+                x => x.Arguments.Select(y => y.Value) as IEnumerable<object>
+            );
+            
+            List<object> arguments = [.. result.Token.Arguments.Select(x => x.Value)];
+            command.ExecuteCore(arguments, options);
+        }
+        catch (Exception ex)
         {
-            Logger.LogError($"Command {command.Name} requires {requiredOptionLength} options");
-            return false;
+            Logger.LogError($"Error processing command: {ex}");
         }
-
-        foreach (OptionToken token in result.Token.Options)
-        {
-            bool hasDefinition =
-                command.Options.TryGetValue(token.Name, out OptionDefinition def)
-                || command.Options.Values.Any(x => x.Aliases.Contains(token.Name), out def);
-
-            if (!hasDefinition)
-            {
-                Logger.LogError(
-                    $"Option {token.Name} is not a valid option for command {command.Name}"
-                );
-                return false;
-            }
-
-            if (def.ValueDefinition.IsRequired && token.Arguments.Length == 0)
-            {
-                Logger.LogError($"Option {token.Name} requires a value");
-                return false;
-            }
-
-            if (
-                token.Arguments.Length > 0
-                && !token.Arguments.All(x => x.TypeName == def.ValueDefinition.TypeName)
-            )
-            {
-                Logger.LogError(
-                    $"Option {token.Name} is not of type {def.ValueDefinition.TypeName}"
-                );
-                return false;
-            }
-        }
-
-        return true;
     }
 }

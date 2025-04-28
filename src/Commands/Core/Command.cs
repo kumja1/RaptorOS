@@ -6,22 +6,22 @@ namespace RaptorOS.Commands.Core;
 
 public class Command
 {
-    public string Name { get; protected set; }
+    public string Name { get;  protected set; }
 
-    public string Usage { get; protected set; }
+    protected string Usage { get; set; }
 
-    public string Description { get; protected set; }
+    protected string Description { get; init; }
 
     public readonly Dictionary<string, OptionDefinition> Options = [];
 
     public readonly List<ArgumentDefinition> Arguments = [];
 
-    public virtual void Execute(
+    protected virtual void Execute(
         List<object> args,
         Dictionary<string, IEnumerable<object?>> options
     ) { }
 
-    public void ExecuteCore(List<object> args, Dictionary<string, IEnumerable<object?>> options)
+    public void ExecuteCore(List<object> args, Dictionary<string, IEnumerable<object>> options)
     {
         if (options.ContainsKey("--help"))
         {
@@ -32,7 +32,7 @@ public class Command
         Execute(args, options);
     }
 
-    public virtual void ShowHelp()
+    private void ShowHelp()
     {
         Logger.Log($"Description: \n\t{Description} ");
         Logger.Log($"Usage: \n\t{Usage}");
@@ -43,11 +43,11 @@ public class Command
 
     protected Command()
     {
-        Options["--help"] = new OptionDefinition
+        Options["help"] = new OptionDefinition
         {
             IsRequired = false,
             Description = "Shows help message",
-            Aliases = ["-h"],
+            Aliases = ["h"],
         };
 
         Name ??= GetType().Name.Replace("Command", string.Empty).ToLowerInvariant();

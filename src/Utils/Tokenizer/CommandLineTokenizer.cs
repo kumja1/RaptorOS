@@ -7,102 +7,185 @@ namespace RaptorOS.Utils.Tokenizer;
 
 public static class CommandLineTokenizer
 {
-    public static TokenizerResult Tokenize(Span<string> parts)
+    public static TokenizerResult Tokenize(string[] parts)
     {
-        TokenizerResult result = new(new CommandToken(name: parts[0]));
-        Span<string> arguments = parts[1..];
-
-        int i = 0;
-        while (i < arguments.Length)
+        try
         {
-            string arg = arguments[i];
-            if (IsOptionToken(arg)){
-                Span<string> optionArgs = [.. arguments.Skip(i).TakeWhile(t => !IsOptionToken(t))];
-                if (TryTokenizeOption(result.Issues, optionArgs, out OptionToken optionToken))
-                    result.Token.Options.Add(optionToken);
+            Logger.LogInfo($"Tokenizing command line: [{string.Join(' ', parts)}]");
 
-                i += optionArgs.Length;
-                continue;
+            TokenizerResult result = new(new CommandToken(name: parts[0]));
+            Logger.LogInfo($"Created command token: {parts[0]}");
+
+
+            string[] arguments = [..parts.Skip(1)];
+            Logger.LogInfo($"Arguments: {string.Join(',', arguments)}");
+
+            if (!arguments.Any())
+                return result;
+
+            Logger.LogInfo($"Arguments length: {arguments.Length}");
+            int i = 0;
+            while (i < arguments.Length)
+            {
+                string arg = arguments[i];
+                Logger.LogInfo($"Processing argument: {arg}");
+
+                if (IsOptionToken(arg))
+                {
+                    try
+                    {
+                        Logger.LogInfo($"Detected option token: {arg}");
+
+                        string[] optionArgs =
+                        [
+                            arg, .. arguments.Skip(i + 1).TakeWhile(t =>
+                            {
+                                Logger.LogInfo(
+                                    $"Is Arg Empty: {string.IsNullOrEmpty(t)}. Is Arg Whitespace: {string.IsNullOrWhiteSpace(t)}");
+                                return !string.IsNullOrWhiteSpace(t) && !IsOptionToken(t);
+                            })
+                        ];
+                        Logger.LogInfo($"Collected option arguments: [{string.Join(", ", optionArgs)}]");
+
+                        if (TryTokenizeOption(result.Issues, optionArgs, out OptionToken optionToken))
+                        {
+                            result.Token.Options.Add(optionToken);
+                            Logger.LogInfo(
+                                $"Added option token: --{optionToken.Name} with {optionToken.Arguments.Count} args");
+                        }
+
+                        i += optionArgs.Length + 1;
+                        continue;
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogError($"Failed to parse option token: {arg}. Error:{e}");
+                    }
+                }
+
+                if (TryTokenizeArgument(result.Issues, arg, out ArgumentToken argToken))
+                {
+                    result.Token.Arguments.Add(argToken);
+                    Logger.LogInfo($"Added argument token: {argToken.TypeName} = {argToken.Value}");
+                }
+
+                i++;
             }
 
-            if (TryTokenizeArgument(result.Issues, arg, out ArgumentToken argToken))
-                result.Token.Arguments.Add(argToken);
-
-            i++;
+            Logger.LogInfo("Tokenization complete.");
+            return result;
         }
-        return result;
+        catch (Exception ex)
+        {
+            Logger.LogError($"Tokenization failed with exception: {ex}");
+            return new TokenizerResult(default);
+        }
     }
 
     public static bool TryTokenizeArgument(
-        EquatableArray<string> issues,
+        List<string> issues,
         string arg,
         out ArgumentToken token
     )
     {
         token = default;
-        if (!TypeParser.TryParse(arg, out (object? Value, string TypeName) tuple))
+        try
         {
-            issues.Add($"Failed to determine argument type for argument {arg}.");
+            Logger.LogInfo($"Attempting to parse argument: {arg}");
+
+            if (!TypeParser.TryParse(arg, out (object? Value, string TypeName) tuple))
+            {
+                string error = $"Failed to determine argument type for argument {arg}.";
+                issues.Add(error);
+                Logger.LogError(error);
+                return false;
+            }
+
+            var (value, typeName) = tuple;
+            token = new ArgumentToken(typeName, value);
+            Logger.LogInfo($"Parsed argument: type={typeName}, value={value}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            string error = $"Exception while parsing argument '{arg}': {ex}";
+            issues.Add(error);
+            Logger.LogError(error);
             return false;
         }
-
-        var (value, typeName) = tuple;
-        token = new ArgumentToken(typeName, value);
-        return true;
     }
 
     public static bool TryTokenizeOption(
-        EquatableArray<string> issues,
-        Span<string> arguments,
+        List<string> issues,
+        string[] arguments,
         out OptionToken token
     )
     {
         token = default;
-
-        if (arguments.Length == 0)
-            return false;
-
-        string option = arguments[0];
-        bool isLongOption = option.StartsWith("--");
-
-        EquatableArray<ArgumentToken> parsedArgs = [];
-        for (int i = 1; i < arguments.Length; i++)
+        try
         {
-            if (TryTokenizeArgument(issues, arguments[i], out ArgumentToken argToken))
-                parsedArgs.Add(argToken);
+            string option = arguments[0];
+            Logger.LogInfo($"Parsing option token: {option}");
+
+            bool isLongOption = option.StartsWith("--");
+
+            EquatableArray<ArgumentToken> argumentTokens = [];
+            for (int i = 1; i < arguments.Length; i++)
+            {
+                Logger.LogInfo($"Parsing option argument: {arguments[i]}");
+
+                if (!TryTokenizeArgument(issues, arguments[i], out ArgumentToken argToken)) continue;
+                
+                argumentTokens.Add(argToken);
+                Logger.LogInfo($"Parsed option argument: {argToken.TypeName} = {argToken.Value}");
+            }
+
+            token = new OptionToken(isLongOption ? option[2..] : option[1..], argumentTokens);
+            Logger.LogInfo(
+                $"Created option token: {(isLongOption ? "--" : "-")}{token.Name} with {argumentTokens.Capacity} argument(s)");
+            return true;
         }
-
-        token = new OptionToken
+        catch (Exception ex)
         {
-            Name = isLongOption ? option[2..] : option[1..],
-            IsShortHand = !isLongOption,
-            Arguments = parsedArgs,
-        };
-
-        return true;
+            string error = $"Exception while parsing option '{(arguments.Length > 0 ? arguments[0] : "null")}': {ex}";
+            issues.Add(error);
+            
+            Logger.LogError(error);
+            return false;
+        }
     }
 
-    public static bool IsOptionToken(string str)
+    private static bool IsOptionToken(string str)
     {
-        if (string.IsNullOrWhiteSpace(str))
-            return false;
-
-        if (str.StartsWith("--"))
-            str = str[2..];
-        else if (str.StartsWith("-"))
-            str = str[1..];
-        else
-            return false;
-
-        if (str.Length == 0)
-            return false;
-
-        foreach (char c in str)
+        try
         {
-            if (!char.IsLetterOrDigit(c) && c != '-' && c != '_')
-                return false;
-        }
+            Logger.LogInfo($"Checking if '{str}' is an option token");
 
-        return true;
+            if (string.IsNullOrWhiteSpace(str))
+                return false;
+
+            if (str.StartsWith("--"))
+                str = str[2..];
+            else if (str.StartsWith("-"))
+                str = str[1..];
+            else
+                return false;
+
+            if (str.Length == 0)
+                return false;
+
+            foreach (char c in str)
+            {
+                if (!char.IsLetterOrDigit(c) && c != '-' && c != '_')
+                    return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError($"Exception in IsOptionToken for input '{str}': {ex}");
+            return false;
+        }
     }
 }

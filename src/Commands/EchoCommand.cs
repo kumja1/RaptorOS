@@ -13,7 +13,7 @@ public class EchoCommand : Command
         Arguments.Add(new ArgumentDefinition { IsRequired = true, TypeName = "string" });
     }
 
-    public override void Execute(
+    protected override void Execute(
         List<object> arguments,
         Dictionary<string, IEnumerable<object?>> options
     ) => Logger.Log(string.Join(" ", arguments));
