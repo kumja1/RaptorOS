@@ -6,7 +6,7 @@ namespace RaptorOS.Commands.Core;
 
 public class Command
 {
-    public string Name { get;  protected set; }
+    public string Name { get; protected set; }
 
     protected string Usage { get; set; }
 

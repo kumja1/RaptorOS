@@ -16,8 +16,7 @@ public static class CommandLineTokenizer
             TokenizerResult result = new(new CommandToken(name: parts[0]));
             Logger.LogInfo($"Created command token: {parts[0]}");
 
-
-            string[] arguments = [..parts.Skip(1)];
+            string[] arguments = [.. parts.Skip(1)];
             Logger.LogInfo($"Arguments: {string.Join(',', arguments)}");
 
             if (!arguments.Any())
@@ -38,20 +37,33 @@ public static class CommandLineTokenizer
 
                         string[] optionArgs =
                         [
-                            arg, .. arguments.Skip(i + 1).TakeWhile(t =>
-                            {
-                                Logger.LogInfo(
-                                    $"Is Arg Empty: {string.IsNullOrEmpty(t)}. Is Arg Whitespace: {string.IsNullOrWhiteSpace(t)}");
-                                return !string.IsNullOrWhiteSpace(t) && !IsOptionToken(t);
-                            })
+                            arg,
+                            .. arguments
+                                .Skip(i + 1)
+                                .TakeWhile(t =>
+                                {
+                                    Logger.LogInfo(
+                                        $"Is Arg Empty: {string.IsNullOrEmpty(t)}. Is Arg Whitespace: {string.IsNullOrWhiteSpace(t)}"
+                                    );
+                                    return !string.IsNullOrWhiteSpace(t) && !IsOptionToken(t);
+                                }),
                         ];
-                        Logger.LogInfo($"Collected option arguments: [{string.Join(", ", optionArgs)}]");
+                        Logger.LogInfo(
+                            $"Collected option arguments: [{string.Join(", ", optionArgs)}]"
+                        );
 
-                        if (TryTokenizeOption(result.Issues, optionArgs, out OptionToken optionToken))
+                        if (
+                            TryTokenizeOption(
+                                result.Issues,
+                                optionArgs,
+                                out OptionToken optionToken
+                            )
+                        )
                         {
                             result.Token.Options.Add(optionToken);
                             Logger.LogInfo(
-                                $"Added option token: --{optionToken.Name} with {optionToken.Arguments.Count} args");
+                                $"Added option token: --{optionToken.Name} with {optionToken.Arguments.Count} args"
+                            );
                         }
 
                         i += optionArgs.Length + 1;
@@ -82,11 +94,7 @@ public static class CommandLineTokenizer
         }
     }
 
-    public static bool TryTokenizeArgument(
-        List<string> issues,
-        string arg,
-        out ArgumentToken token
-    )
+    public static bool TryTokenizeArgument(List<string> issues, string arg, out ArgumentToken token)
     {
         token = default;
         try
@@ -129,27 +137,29 @@ public static class CommandLineTokenizer
 
             bool isLongOption = option.StartsWith("--");
 
-            EquatableArray<ArgumentToken> argumentTokens = [];
+            token = new OptionToken(isLongOption ? option[2..] : option[1..], []);
             for (int i = 1; i < arguments.Length; i++)
             {
                 Logger.LogInfo($"Parsing option argument: {arguments[i]}");
 
-                if (!TryTokenizeArgument(issues, arguments[i], out ArgumentToken argToken)) continue;
-                
-                argumentTokens.Add(argToken);
+                if (!TryTokenizeArgument(issues, arguments[i], out ArgumentToken argToken))
+                    continue;
+
+                token.Arguments.Add(argToken);
                 Logger.LogInfo($"Parsed option argument: {argToken.TypeName} = {argToken.Value}");
             }
 
-            token = new OptionToken(isLongOption ? option[2..] : option[1..], argumentTokens);
             Logger.LogInfo(
-                $"Created option token: {(isLongOption ? "--" : "-")}{token.Name} with {argumentTokens.Capacity} argument(s)");
+                $"Created option token: {(isLongOption ? "--" : "-")}{token.Name} with {token.Arguments.Count} argument(s)"
+            );
             return true;
         }
         catch (Exception ex)
         {
-            string error = $"Exception while parsing option '{(arguments.Length > 0 ? arguments[0] : "null")}': {ex}";
+            string error =
+                $"Exception while parsing option '{(arguments.Length > 0 ? arguments[0] : "null")}': {ex}";
             issues.Add(error);
-            
+
             Logger.LogError(error);
             return false;
         }

@@ -9,14 +9,10 @@ namespace RaptorOS.Utils;
 public struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>, IEnumerable<T>
 {
     public EquatableArray(int capacity)
-        : this(new T[capacity == 0 ? 1 : capacity])
-    {
-    }
+        : this(new T[capacity == 0 ? 1 : capacity]) { }
 
     public EquatableArray()
-        : this(capacity: 4)
-    {
-    }
+        : this(capacity: 4) { }
 
     private T[] _array = array;
 
@@ -30,19 +26,20 @@ public struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>, IEnu
 
     public static implicit operator EquatableArray<T>(List<T> list) => new([.. list]);
 
+
     public readonly ref T this[int index] => ref _array[index];
 
-    public int Capacity => _array.Length;
+    public readonly int Capacity => _array.Length;
 
     public int Count { get; private set; }
 
     public readonly bool Equals(EquatableArray<T> other) =>
         Count == other.Count && _array.AsSpan().SequenceEqual(other._array);
 
-    public readonly override bool Equals(object? obj) =>
+    public override readonly bool Equals(object? obj) =>
         obj is EquatableArray<T> other && Equals(other);
 
-    public readonly override int GetHashCode()
+    public override readonly int GetHashCode()
     {
         HashCode hashCode = new();
         for (int i = 0; i < Count; i++)
@@ -58,12 +55,27 @@ public struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>, IEnu
     public void Add(T item)
     {
         if (Count == Capacity)
-            Array.Resize(ref _array, Capacity * 2 );
-        
+            Array.Resize(ref _array, Capacity * 2);
+
         _array[Count] = item;
         Count++;
     }
 
+    public void Remove(T item)
+    {
+        int index = IndexOf(item);
+        if (index == -1)
+            return;
+
+        for (int i = index; i < Count - 1; i++)
+            _array[i] = _array[i + 1];
+
+        _array[Count - 1] = default;
+        Count--;
+
+        if (Count == Capacity / 4 && Capacity > 4)
+            Array.Resize(ref _array, Capacity / 4);
+    }
 
     public void AddRange(IEnumerable<T> items)
     {
@@ -71,19 +83,26 @@ public struct EquatableArray<T>(T[] array) : IEquatable<EquatableArray<T>>, IEnu
             Add(item);
     }
 
-    public int IndexOf(T item)
+    public void RemoveRange(IEnumerable<T> items)
+    {
+        foreach (T item in items)
+            Remove(item);
+    }
+
+    public readonly int IndexOf(T item)
     {
         Logger.LogInfo("IndexOf start");
-    
+
         for (int i = 0; i < Count; i++)
         {
             Logger.LogInfo($"rComparing index {i}");
 
-            if (item is not IEquatable<T> equatable  || !equatable.Equals(_array[i])) continue;
+            if (item is not IEquatable<T> equatable || !equatable.Equals(_array[i]))
+                continue;
             Logger.LogInfo($"Found match at index {i}");
             return i;
         }
-    
+
         Logger.LogInfo("Item not found");
         return -1;
     }
@@ -109,7 +128,5 @@ internal class EquatableArrayEnumerator<T>(EquatableArray<T> array) : IEnumerato
 
     object? IEnumerator.Current => Current!;
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 }

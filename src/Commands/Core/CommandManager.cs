@@ -30,7 +30,9 @@ public class CommandManager
         Logger.LogInfo($"Executing command: {input}");
         try
         {
-            string[] parts = input.TrimStart().TrimEnd()
+            string[] parts = input
+                .TrimStart()
+                .TrimEnd()
                 .Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             Logger.LogInfo($"Processing command: {parts[0]}");
             Logger.LogInfo($"Command arguments: {string.Join(",", parts)}");
@@ -45,7 +47,7 @@ public class CommandManager
             Logger.LogInfo($"Found command {cmdName}");
             TokenizerResult result = CommandLineTokenizer.Tokenize(parts);
             Logger.LogInfo("Received tokenizer result");
-            if (!CommandLineParser.ParseCommand(command,result))
+            if (!CommandLineParser.ParseCommand(command, result))
                 return;
 
             Logger.LogInfo($"Command {cmdName} is valid");
@@ -53,7 +55,7 @@ public class CommandManager
                 x => x.Name,
                 x => x.Arguments.Select(y => y.Value) as IEnumerable<object>
             );
-            
+
             List<object> arguments = [.. result.Token.Arguments.Select(x => x.Value)];
             command.ExecuteCore(arguments, options);
         }

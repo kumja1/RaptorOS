@@ -2,7 +2,7 @@
 
 ISO_PATH="$1"
 VNC_PORT=8      # QEMU will listen on localhost:5901
-NOVNC_PORT=6080   # noVNC will serve on http://localhost:6080
+NOVNC_PORT=6088   # noVNC will serve on http://localhost:6080
 
 # Check for required files
 if [ ! -f "$ISO_PATH" ]; then
@@ -20,6 +20,12 @@ if [ ! -d "noVNC/utils/websockify" ]; then
     echo "[+] Cloning websockify into noVNC/utils/..."
     git clone https://github.com/novnc/websockify.git noVNC/utils/websockify
 fi
+
+# Build ISO if not already built
+PROJECT_DIR="$(dirname "$ISO_PATH")" | awk -F'/bin/cosmos'
+dotnet clean $PROJECT_DIR
+dotnet build $PROJECT_DIR
+
 
 # Start QEMU in background with VNC output
 echo "[+] Starting QEMU with VNC output..."
